@@ -42,6 +42,9 @@ interface CallResult {
   returnData: string;
 }
 
+const FILECOIN_ID = 314;
+const VALID_FILECOIN_ADDRESS = '0x1d21dd40f184963cc919ef8400ac4ea2c5ba18d0';
+
 async function all<T>(
   provider: BaseProvider,
   multicall: Multicall | null,
@@ -58,20 +61,28 @@ async function all<T>(
       callData,
     };
   });
+
+  const currentNetwork = await provider.getNetwork();
+
   const overrides = {
     blockTag: block,
-    from: multicall?.address,
+    ...(currentNetwork.chainId === FILECOIN_ID && {
+      from: VALID_FILECOIN_ADDRESS,
+    }),
   };
   const response = contract
     ? await contract.aggregate(callRequests, overrides)
     : await callDeployless(provider, callRequests, block);
+
   const callCount = calls.length;
   const callResult: T[] = [];
   for (let i = 0; i < callCount; i++) {
     const name = calls[i].name;
     const outputs = calls[i].outputs;
     const returnData = response.returnData[i];
+
     const params = Abi.decode(name, outputs, returnData);
+
     const result = outputs.length === 1 ? params[0] : params;
     callResult.push(result);
   }
@@ -94,9 +105,13 @@ async function tryAll<T>(
       callData,
     };
   });
+  const currentNetwork = await provider.getNetwork();
+
   const overrides = {
     blockTag: block,
-    from: multicall2?.address,
+    ...(currentNetwork.chainId === FILECOIN_ID && {
+      from: VALID_FILECOIN_ADDRESS,
+    }),
   };
   const response: CallResult[] = contract
     ? await contract.tryAggregate(false, callRequests, overrides)
@@ -140,9 +155,13 @@ async function tryEach<T>(
       callData,
     };
   });
+  const currentNetwork = await provider.getNetwork();
+
   const overrides = {
     blockTag: block,
-    from: multicall3?.address,
+    ...(currentNetwork.chainId === FILECOIN_ID && {
+      from: VALID_FILECOIN_ADDRESS,
+    }),
   };
   const response: CallResult[] = contract
     ? await contract.aggregate3(callRequests, overrides)
@@ -179,9 +198,15 @@ async function callDeployless(
   const inputs = constructor?.inputs || [];
   const args = Abi.encodeConstructor(inputs, [callRequests]);
   const data = hexConcat([deploylessMulticallBytecode, args]);
+
+  const currentNetwork = await provider.getNetwork();
+
   const callData = await provider.call(
     {
       data,
+      ...(currentNetwork.chainId === FILECOIN_ID && {
+        from: VALID_FILECOIN_ADDRESS,
+      }),
     },
     block,
   );
@@ -205,9 +230,14 @@ async function callDeployless2(
   const inputs = constructor?.inputs || [];
   const args = Abi.encodeConstructor(inputs, [false, callRequests]);
   const data = hexConcat([deploylessMulticall2Bytecode, args]);
+  const currentNetwork = await provider.getNetwork();
+
   const callData = await provider.call(
     {
       data,
+      ...(currentNetwork.chainId === FILECOIN_ID && {
+        from: VALID_FILECOIN_ADDRESS,
+      }),
     },
     block,
   );
@@ -232,9 +262,14 @@ async function callDeployless3(
   const inputs = constructor?.inputs || [];
   const args = Abi.encodeConstructor(inputs, [callRequests]);
   const data = hexConcat([deploylessMulticall3Bytecode, args]);
+  const currentNetwork = await provider.getNetwork();
+
   const callData = await provider.call(
     {
       data,
+      ...(currentNetwork.chainId === FILECOIN_ID && {
+        from: VALID_FILECOIN_ADDRESS,
+      }),
     },
     block,
   );
