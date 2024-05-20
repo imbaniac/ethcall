@@ -343,6 +343,10 @@ function getMulticall3(chainId: number): Multicall | null {
       address: '0x138A85647768815078DF1dD85C6121e611381A0b',
       block: 14080843,
     },
+    314: {
+      address,
+      block: 3328594	
+    }
   };
   return addressMap[chainId];
 }
